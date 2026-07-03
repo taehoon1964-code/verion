@@ -10,9 +10,20 @@
 </style>
 </head>
 <body>
-  <!-- COMPAGO를 iframe으로 감싸 verion.ai.kr 주소를 유지 (※ 아래 주의사항 참고) -->
   <iframe id="app"
     src="https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec"
     allow="clipboard-write; clipboard-read"></iframe>
+  <script>
+    var EXEC = "https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec";
+    window.addEventListener('message', function (e) {
+      try {
+        if (String(e.origin || '').indexOf('google') < 0) return;
+        var d = e.data;
+        if (d && d.compagoHome) {
+          document.getElementById('app').src = EXEC + '?_=' + Date.now();
+        }
+      } catch (_) {}
+    });
+  </script>
 </body>
 </html>
