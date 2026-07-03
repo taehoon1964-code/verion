@@ -10,9 +10,13 @@
 </style>
 </head>
 <body>
-  <!-- COMPAGO를 iframe으로 감싸 verion.ai.kr 주소를 유지 (※ 아래 주의사항 참고) -->
   <iframe id="app"
     src="https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec"
     allow="clipboard-write; clipboard-read"></iframe>
+  <script>
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.compagoHome) { location.reload(); }
+    });
+  </script>
 </body>
 </html>
