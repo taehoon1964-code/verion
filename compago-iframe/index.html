@@ -10,13 +10,12 @@
 </style>
 </head>
 <body>
-  <iframe id="app"
-    src="https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec"
-    allow="clipboard-write; clipboard-read"></iframe>
+  <iframe id="app" allow="clipboard-write; clipboard-read"></iframe>
   <script>
-    // 앱이 "홈으로" 신호를 보내면 → wrapper를 새로고침 (= 브라우저 Refresh 누른 효과 = 랜딩 복귀)
+    var EXEC = 'https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec';
+    document.getElementById('app').src = EXEC + (location.search || '');
     window.addEventListener('message', function (e) {
-      if (e.data && e.data.compagoHome) { location.reload(); }
+      if (e.data && e.data.compagoHome) { location.href = location.pathname; }
     });
   </script>
 </body>
