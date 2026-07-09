@@ -13,10 +13,24 @@
   <iframe id="app" allow="clipboard-write; clipboard-read"></iframe>
   <script>
     var EXEC = 'https://script.google.com/a/verion.kr/macros/s/AKfycbxqH4dp9HtllNiojsy0EBJZFf4mkCeiOjTYOt-azoOeC3JNTVssEpg2jEnfHe6s131z/exec';
-    document.getElementById('app').src = EXEC + (location.search || '');
+    var app = document.getElementById('app');
+    function loadFromSearch(){ app.src = EXEC + (location.search || ''); }
+    loadFromSearch();
     window.addEventListener('message', function (e) {
-      if (e.data && e.data.compagoHome) { location.href = location.pathname; }
+      var d = e.data || {};
+      if (d.compagoNav) {
+        var s = d.search || '';
+        try { history.pushState({}, '', location.pathname + s); } catch (_e) {}
+        app.src = EXEC + s;
+        return;
+      }
+      if (d.compagoHome) {
+        if (location.search) { try { history.pushState({}, '', location.pathname); } catch (_e) {} }
+        app.src = EXEC;
+        return;
+      }
     });
+    window.addEventListener('popstate', loadFromSearch);
   </script>
 </body>
 </html>
