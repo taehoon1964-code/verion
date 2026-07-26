@@ -1,1 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VALO-MIX · VERION</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;font-family:'Segoe UI','Malgun Gothic',sans-serif}
+  iframe{border:0;width:100%;height:100vh;display:block;background:#0e3b34}
+  #loader{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:
+      radial-gradient(760px 520px at 12% -8%, rgba(255,255,255,.14), transparent 55%),
+      radial-gradient(900px 640px at 105% 108%, rgba(18,120,90,.55), transparent 60%),
+      radial-gradient(680px 480px at 96% 0%, rgba(95,168,46,.28), transparent 55%),
+      linear-gradient(125deg,#0E5A4E 0%,#12897A 50%,#5FA82E 100%);
+    transition:opacity .5s ease;opacity:1}
+  #loader.hide{opacity:0;pointer-events:none}
+  #loader .mk{width:66px;height:66px;border-radius:18px;display:grid;place-items:center;
+    background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+    font-weight:900;font-size:26px;letter-spacing:-1px;color:#fff}
+  #loader .wm{font-weight:900;letter-spacing:8px;font-size:40px;line-height:1;
+    background:linear-gradient(100deg,#e7c879,#ffffff 55%,#bfeee2);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent}
+  #loader .sub{color:rgba(255,255,255,.9);font-size:12px;letter-spacing:4px;font-weight:800;margin-top:-4px}
+  #loader .sp{width:44px;height:44px;border:4px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;
+    animation:vmSpin .8s linear infinite;margin-top:8px}
+  @keyframes vmSpin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div id="loader">
+    <div class="mk">VM</div>
+    <div class="wm">VALO-MIX</div>
+    <div class="sub">레미콘 LCA · 저탄소 배합 플랫폼</div>
+    <div class="sp"></div>
+  </div>
+  <iframe id="app" allow="clipboard-write; clipboard-read"></iframe>
+  <script>
+    // ⚠ 이 EXEC 값만 현재 VALO-MIX 웹앱 /exec 주소로 유지하면 됩니다.
+    var EXEC = 'https://script.google.com/macros/s/AKfycbz7YJ5SHyGWkMmZZTbH5TaLlqFeuFRRJK3csyifvcBq5uGIWtHYrC2o1_irydRlJ67ubA/exec';
 
+    var app = document.getElementById('app');
+    var loader = document.getElementById('loader');
+    var failsafe;
+    function showLoader(){ loader.classList.remove('hide'); clearTimeout(failsafe); failsafe = setTimeout(hideLoader, 9000); }
+    function hideLoader(){ loader.classList.add('hide'); clearTimeout(failsafe); }
+    app.addEventListener('load', function(){ setTimeout(hideLoader, 300); });
+
+    function withWrap(search){
+      var s = search || '';
+      if (s.indexOf('vmwrap=') >= 0) return s;
+      return s ? (s + '&vmwrap=1') : '?vmwrap=1';
+    }
+    function loadFromSearch(){ showLoader(); app.src = EXEC + withWrap(location.search); }
+    loadFromSearch();
+
+    window.addEventListener('message', function (e) {
+      var d = e.data || {};
+      if (d.valomixNav) {
+        var s = d.search || '';
+        try { history.pushState({}, '', location.pathname + s); } catch (_e) {}
+        showLoader(); app.src = EXEC + withWrap(s); return;
+      }
+      if (d.valomixHome) {
+        try { history.pushState({}, '', location.pathname); } catch (_e) {}
+        showLoader(); app.src = EXEC + '?vmwrap=1'; return;
+      }
+    });
+    window.addEventListener('popstate', loadFromSearch);
+  </script>
+</body>
+</html>
