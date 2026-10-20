@@ -1,208 +1,31 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>COMPAGO · VERION</title>
+<meta name="robots" content="noindex">
+<!--
+  COMPAGO 는 2026-10-21 Google Cloud(Cloud Run)로 이전되었습니다.
+  이 페이지는 verion.ai.kr/compago 로 들어온 사람을 클라우드 주소로 보냅니다.
+  ?view= 등 딥링크 파라미터는 그대로 넘깁니다. (이전 GAS iframe 래퍼: index.html.gas-wrapper-20261021.bak)
+-->
+<script>
+(function () {
+  var CLOUD = 'https://compago-947595123812.asia-northeast3.run.app/';
+  var q = (location.search || '').replace(/^\?/, '').split('&').filter(function (kv) { return kv && kv.split('=')[0] !== '_'; });
+  var url = CLOUD + (q.length ? '?' + q.join('&') : '') + (location.hash || '');
+  location.replace(url);
+  window.__COMPAGO_TARGET__ = url;
+})();
+</script>
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;font-family:'Segoe UI','Malgun Gothic',sans-serif;background:#0e3b34}
-  #frames{position:fixed;inset:0}
-  /* 숨긴 화면도 크기를 유지한다(visibility) — display:none 이면 다시 보일 때 레이아웃·차트가 다시 계산된다 */
-  #frames iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:block;background:#0e3b34;visibility:hidden;z-index:1}
-  #frames iframe.on{visibility:visible;z-index:2}
-  #loader{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-    background:
-      radial-gradient(760px 520px at 12% -8%, rgba(255,255,255,.14), transparent 55%),
-      radial-gradient(900px 640px at 105% 108%, rgba(18,64,170,.55), transparent 60%),
-      radial-gradient(680px 480px at 96% 0%, rgba(28,200,180,.24), transparent 55%),
-      linear-gradient(125deg,#16ab8d 0%,#1a91c4 47%,#2160cf 100%);
-    transition:opacity .5s ease;opacity:1}
-  #loader.hide{opacity:0;pointer-events:none}
-  #loader .wm{font-weight:900;letter-spacing:9px;font-size:46px;line-height:1;
-    background:linear-gradient(100deg,#e7c879,#ffffff 55%,#bfeee2);-webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;color:transparent}
-  #loader .sub{color:rgba(255,255,255,.85);font-size:12px;letter-spacing:5px;font-weight:800;margin-top:-6px}
-  #loader .sp{width:46px;height:46px;border:4px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;
-    animation:cpSpin .8s linear infinite;margin-top:8px}
-  #navspin{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:rgba(8,22,34,.28)}
-  #navspin.show{display:flex}
-  #navspin .sp{width:46px;height:46px;border:4px solid rgba(255,255,255,.28);border-top-color:#12b58a;border-radius:50%;animation:cpSpin .8s linear infinite}
-  @keyframes cpSpin{to{transform:rotate(360deg)}}
+  body{margin:0;font-family:system-ui,"Malgun Gothic",sans-serif;background:linear-gradient(135deg,#1FA98C,#2E86DE);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff}
+  a{color:#fff;font-weight:700}
 </style>
 </head>
 <body>
-  <div id="loader">
-    <div class="wm">COMPAGO</div>
-    <div class="sub">VERION 통합 업무 플랫폼</div>
-    <div class="sp"></div>
-  </div>
-  <div id="navspin" aria-hidden="true"><div class="sp"></div></div>
-  <div id="frames"></div>
-  <script>
-  /* ==========================================================================
-   *  COMPAGO keep-alive 셸
-   *  한 번 연 모듈 화면을 버리지 않고 숨겨 두었다가, 다시 가면 즉시 보여준다.
-   *  (예전: 모듈을 오갈 때마다 서버가 화면 전체를 새로 만들고 데이터를 다시 받았다)
-   *  다시 보일 때 앱이 "그사이 데이터가 바뀌었는지"를 서버에 가볍게 묻고, 바뀌었으면 그 화면만 새로 받는다.
-   *  앱이 이 규약을 모르면(기준선 모드·구버전) 예전과 똑같이 동작한다.
-   * ========================================================================== */
-  (function () {
-    var EXEC = 'https://script.google.com/a/verion.kr/macros/s/AKfycby5PzzpJmUy4pdJxU_SvjePyZRIoxJqs0sZuvaqaRp8hzr-UxsP6qhwJ8yqS9_zgWBS/exec';
-    var SMALL = !!(window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
-    var MAX_FRAMES = SMALL ? 3 : 6;          // 동시에 살려 둘 화면 수(메모리 보호)
-    var MAX_AGE_MS = 60 * 60 * 1000;         // 1시간 넘은 화면은 새로 받는다(배포 갱신 반영)
-    var FIRST_FAILSAFE_MS = 8000, NAV_FAILSAFE_MS = 20000;
-
-    var box = document.getElementById('frames');
-    var loader = document.getElementById('loader');
-    var navspin = document.getElementById('navspin');
-    var recs = [];                            // { key, search, el, win, shell, ready, dirty, born, used }
-    var active = null, pending = null, failsafe = 0, firstShown = false;
-
-    function cleanSearch(s) {
-      s = String(s || '');
-      if (s.charAt(0) === '?') s = s.slice(1);
-      var parts = s.split('&').filter(function (kv) { return kv && kv.split('=')[0] !== '_'; });
-      return parts.length ? '?' + parts.join('&') : '';
-    }
-    function param(s, name) {
-      var m = new RegExp('[?&]' + name + '=([^&]*)').exec(s);
-      if (!m) return '';
-      try { return decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch (e) { return m[1]; }
-    }
-    function keyOf(s) { var v = param(s, 'view'); return (!v || v.indexOf('cat-') === 0) ? 'home' : v; }
-    function homeHash(s) { var v = param(s, 'view'); return (v && v.indexOf('cat-') === 0) ? '#cat/' + v.slice(4) : '#home'; }
-    function hasExtras(s) {
-      return s.slice(1).split('&').some(function (kv) { var k = kv.split('=')[0]; return kv && k !== 'view' && k !== 'screen'; });
-    }
-    function reusable(rec, s) {
-      if (!rec || !rec.shell || !rec.ready) return false;
-      if (Date.now() - rec.born > MAX_AGE_MS) return false;
-      if (rec.key === 'home') return true;                   // 랜딩은 해시로 카테고리 이동
-      if (rec.search === s) return true;
-      return !hasExtras(s) && param(s, 'screen') === param(rec.search, 'screen');   // 딥링크(레코드 지정)는 새로 연다
-    }
-
-    function setOn(rec) {
-      for (var i = 0; i < recs.length; i++) recs[i].el.className = (recs[i] === rec) ? 'on' : '';
-      active = rec;
-      rec.used = Date.now();
-      try { rec.el.contentWindow.focus(); } catch (e) {}
-    }
-    function post(rec, msg) { try { if (rec && rec.win) rec.win.postMessage(msg, '*'); } catch (e) {} }
-    function removeRec(rec) {
-      var i = recs.indexOf(rec);
-      if (i >= 0) recs.splice(i, 1);
-      try { rec.el.parentNode.removeChild(rec.el); } catch (e) {}
-      if (active === rec) active = null;
-      if (pending === rec) pending = null;
-    }
-    function evict() {
-      while (recs.length >= MAX_FRAMES) {
-        // 저장하지 않은 편집이 있는 화면은 버리지 않는다
-        var cands = recs.filter(function (r) { return r !== active && r !== pending && !r.dirty; });
-        if (!cands.length) break;
-        cands.sort(function (a, b) { return a.used - b.used; });
-        removeRec(cands[0]);
-      }
-    }
-    /** 메시지를 보낸 창이 어느 프레임 안에 있는지 — GAS 화면은 iframe 2~3겹 안쪽에서 돈다. */
-    function recOfSource(src) {
-      for (var i = 0; i < recs.length; i++) {
-        var w = src, cw = recs[i].el.contentWindow;
-        for (var d = 0; d < 6 && w; d++) {
-          if (w === cw) return recs[i];
-          var p = null;
-          try { p = w.parent; } catch (e) { break; }
-          if (!p || p === w) break;
-          w = p;
-        }
-      }
-      return null;
-    }
-    function showSpin() { if (firstShown) navspin.className = 'show'; }
-    function hideSpin() { navspin.className = ''; }
-
-    function reveal(rec) {
-      if (recs.indexOf(rec) < 0) return;
-      if (pending === rec) pending = null;
-      clearTimeout(failsafe);
-      setOn(rec);
-      firstShown = true;
-      loader.classList.add('hide');
-      hideSpin();
-      // 같은 화면의 옛 프레임(딥링크·데이터 변경으로 대체된 것)은 이제 버린다
-      recs.slice().forEach(function (r) { if (r !== rec && r.key === rec.key) removeRec(r); });
-    }
-    function startLoad(key, s, opts) {
-      if (pending) {
-        if (pending.key === key && pending.search === s) return;   // 이미 여는 중
-        removeRec(pending);
-      }
-      evict();
-      var el = document.createElement('iframe');
-      el.setAttribute('allow', 'clipboard-write; clipboard-read');
-      el.setAttribute('title', 'COMPAGO');
-      var rec = { key: key, search: s, el: el, win: null, shell: false, ready: false, dirty: false, born: Date.now(), used: Date.now() };
-      recs.push(rec);
-      pending = rec;
-      el.addEventListener('load', function () {
-        setTimeout(function () { if (pending === rec) reveal(rec); }, rec.shell ? 50 : 300);
-      });
-      el.src = EXEC + (s ? s + '&' : '?') + '_=' + Date.now();
-      box.appendChild(el);
-      if (firstShown && !(opts && opts.spun)) showSpin();
-      clearTimeout(failsafe);
-      failsafe = setTimeout(function () { if (pending === rec) reveal(rec); }, firstShown ? NAV_FAILSAFE_MS : FIRST_FAILSAFE_MS);
-    }
-
-    function go(search, opts) {
-      opts = opts || {};
-      var s = cleanSearch(search), key = keyOf(s);
-      if (opts.push) { try { history.pushState({ compago: 1 }, '', location.pathname + s); } catch (e) {} }
-      var rec = null;
-      for (var i = 0; i < recs.length; i++) { if (recs[i].key === key && recs[i] !== pending) { rec = recs[i]; break; } }
-      if (rec && reusable(rec, s)) {
-        if (pending) { removeRec(pending); clearTimeout(failsafe); }
-        setOn(rec);
-        hideSpin();
-        post(rec, { compago: 'resume', t: opts.t || 0, hash: key === 'home' ? homeHash(s) : null });
-        return;
-      }
-      startLoad(key, s, opts);
-    }
-
-    window.addEventListener('message', function (e) {
-      var d = e.data;
-      if (!d || typeof d !== 'object') return;
-      var rec = recOfSource(e.source);
-      if (!rec) return;                       // 우리 프레임이 보낸 것만
-      if (d.compago == null) {                // 이전 래퍼 규약 호환
-        if (d.compagoNav) go(d.search || '', { push: true });
-        else if (d.compagoHome) go('', { push: true });
-        return;
-      }
-      switch (d.compago) {
-        case 'hello':
-          rec.shell = true; rec.win = e.source;
-          post(rec, { compago: 'shell', v: 1 });
-          break;
-        case 'dom':
-          rec.ready = true;
-          if (!rec.win) rec.win = e.source;
-          if (pending === rec) reveal(rec);
-          break;
-        case 'nav':
-          if (rec === active) { rec.dirty = !!d.dirty; go(d.search || '', { push: true, t: d.t, spun: d.spun }); }
-          break;
-        case 'reload':                        // 숨겨 둔 사이 데이터가 바뀜 → 그 화면만 새로
-          if (rec === active && !pending) { rec.shell = false; startLoad(rec.key, rec.search, {}); }
-          break;
-      }
-    });
-    window.addEventListener('popstate', function () { go(location.search, {}); });
-    go(location.search, {});
-  })();
-  </script>
+  <p>COMPAGO로 이동 중입니다… 이동하지 않으면 <a id="go" href="https://compago-947595123812.asia-northeast3.run.app/">여기를 누르세요</a>.</p>
+  <script>try{document.getElementById('go').href=window.__COMPAGO_TARGET__;}catch(e){}</script>
 </body>
 </html>
