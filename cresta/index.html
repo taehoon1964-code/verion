@@ -1,1 +1,39 @@
-
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRESTA Studio · VERION</title>
+<meta name="robots" content="noindex">
+<!--
+  CRESTA Studio (CGPS 신용성장 예측모형) 는 Google Cloud(Cloud Run, 서울)에서 실행됩니다.
+  이 페이지는 verion.ai.kr/cresta 로 들어온 사람을 클라우드 주소로 보냅니다.
+  접속은 구글 로그인(IAP)으로 허용한 계정만 가능합니다 (그룹 cresta-users@verion.kr).
+  서비스 주소가 바뀌면 아래 CLOUD 한 줄만 고칩니다.
+-->
+<script>
+(function () {
+  var CLOUD = 'https://cresta-studio-701953805465.asia-northeast3.run.app/';
+  var q = (location.search || '').replace(/^\?/, '').split('&').filter(function (kv) { return kv && kv.split('=')[0] !== '_'; });
+  var url = CLOUD + (q.length ? '?' + q.join('&') : '') + (location.hash || '');
+  location.replace(url);
+  window.__CRESTA_TARGET__ = url;
+})();
+</script>
+<style>
+  body{margin:0;font-family:system-ui,"Malgun Gothic",sans-serif;background:#0F2A4A;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#C9D3E0;text-align:center}
+  h1{color:#fff;letter-spacing:4px;font-size:30px;margin:0 0 6px}
+  h1 span{color:#C0972B}
+  a{color:#C0972B;font-weight:700}
+  p{margin:6px 0}
+</style>
+</head>
+<body>
+  <div>
+    <h1>CRESTA <span>Studio</span></h1>
+    <p>CRESTA Studio로 이동 중입니다… 처음 접속하면 30초~1분 정도 걸릴 수 있습니다.</p>
+    <p>이동하지 않으면 <a id="go" href="https://cresta-studio-701953805465.asia-northeast3.run.app/">여기를 누르세요</a>.</p>
+  </div>
+  <script>try{document.getElementById('go').href=window.__CRESTA_TARGET__;}catch(e){}</script>
+</body>
+</html>
